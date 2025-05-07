@@ -303,12 +303,32 @@ $is_popup = isset($_GET['popup']) && $_GET['popup'] === '1';
                         </div>
                     </div>
                     <div class="image-actions">
-                        <?php if ($is_popup): ?>
-                        <button class="select-image" data-path="<?php echo htmlspecialchars($image['path']); ?>">Sélectionner</button>
-                        <?php else: ?>
-                        <span class="copy-path" data-path="<?php echo htmlspecialchars($image['path']); ?>">Copier le chemin</span>
-                        <a href="delete-image.php?file=<?php echo urlencode($image['name']); ?>" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette image ?');">Supprimer</a>
-                        <?php endif; ?>
+                    <?php if ($is_popup): ?>
+<script>
+// Sélection d'image pour l'éditeur
+document.querySelectorAll('.select-image').forEach(button => {
+    button.addEventListener('click', function() {
+        const path = this.getAttribute('data-path');
+        
+        // Standardiser le format du chemin d'image pour l'éditeur
+        // Nous voulons stocker le chemin sans le préfixe "../" si présent
+        let standardPath = path;
+        if (standardPath.startsWith('../')) {
+            standardPath = standardPath.substring(3);
+        }
+        
+        // Mettre à jour le champ avec le chemin standardisé
+        window.opener.document.getElementById('featured_image').value = standardPath;
+        
+        // Déclencher l'événement change pour mettre à jour la prévisualisation
+        const event = new Event('change');
+        window.opener.document.getElementById('featured_image').dispatchEvent(event);
+        window.close();
+    });
+});
+</script>
+<?php endif; ?>
+<?php endif; ?>
                     </div>
                 </div>
                 <?php endforeach; ?>

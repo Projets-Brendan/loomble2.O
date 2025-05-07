@@ -139,7 +139,7 @@ if (isset($_POST['auto_save']) && $_POST['auto_save'] === '1') {
 // Gestion de l'upload d'image
 $image_path = $featured_image;
 if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-    // Ajouter après if ($_FILES['image']['error'] === UPLOAD_ERR_OK) {
+    // Validation de l'image
     $validation_result = validateImage($_FILES['image']);
     if ($validation_result !== true) {
         $error = $validation_result;
@@ -157,7 +157,7 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
             $target_file = $target_dir . $new_file_name;
             
             if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
-                // Correction du chemin d'image pour qu'il soit standard et cohérent
+                // Chemin d'image standardisé - stocker sans le préfixe "../" pour cohérence
                 $image_path = 'images/articles/' . $new_file_name;
                 
                 // Optimiser l'image si c'est un format que nous pouvons optimiser
@@ -256,8 +256,8 @@ function optimizeImage($source_path, $destination_path, $quality = 85) {
             </div>
             
             ' . (!empty($image_path) ? '<div class="article-featured-image">
-                <img src="' . htmlspecialchars($image_path) . '" alt="' . htmlspecialchars($title) . '">
-            </div>' : '') . '
+    <img src="' . htmlspecialchars($image_path) . '" alt="' . htmlspecialchars($title) . '">
+</div>' : '') . '
             
             <div class="article-content">
                 ' . $content . '
@@ -650,7 +650,9 @@ if (isset($_GET['open_image_manager'])) {
     </div>
 
     <script>
-        // Prévisualisation de l'image téléchargée
+      // Remplacer ce script JavaScript dans editor.php (environ ligne 600)
+
+// Prévisualisation de l'image téléchargée
 document.getElementById('image').addEventListener('change', function(e) {
     const preview = document.getElementById('image-preview');
     const file = e.target.files[0];
@@ -674,12 +676,19 @@ document.getElementById('featured_image').addEventListener('change', function() 
     const url = this.value;
     
     if (url) {
-        // Corriger le chemin de prévisualisation pour qu'il fonctionne correctement
-        if (url.startsWith('images/')) {
-            preview.src = '../' + url;
-        } else {
-            preview.src = url;
+        // Construire correctement le chemin de prévisualisation
+        let previewUrl = url;
+        
+        // Si le chemin ne commence pas par http (donc un chemin relatif)
+        if (!url.startsWith('http')) {
+            // Si le chemin ne commence pas déjà par "../"
+            if (!url.startsWith('../')) {
+                // Ajouter "../" pour la prévisualisation depuis l'admin
+                previewUrl = '../' + url;
+            }
         }
+        
+        preview.src = previewUrl;
         preview.style.display = 'block';
     } else {
         preview.style.display = 'none';

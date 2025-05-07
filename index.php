@@ -188,38 +188,59 @@
         }
 
   // Afficher les articles
-// Afficher les articles
-// Afficher les articles
+  <?php
+  // Afficher les articles
+  <?php
+// Remplacer le bloc de code suivant dans index.php (environ ligne 221)
+
 // Afficher les articles
 if (empty($articles)) {
-  echo "<p>Aucun article n'a encore été publié.</p>";
+    echo "<p>Aucun article n'a encore été publié.</p>";
 } else {
-  foreach ($articles as $article) {
-      // Récupérer le chemin d'image de l'article
-      $image_src = 'images/default-article.jpg'; // Image par défaut
-      
-      // Si une image est définie dans le contenu de l'article
-      if (!empty($article['featured_image'])) {
-          // Supprimer le préfixe "../" si présent
-          $image_src = str_replace('../', '', $article['featured_image']);
-      }
-      
-      // Lien vers l'article
-      $article_url = $articles_dir . urlencode($article['file']);
-      
-      // Afficher la carte de l'article
-      echo '
-      <div class="postCard">
-          <div class="imgBx">
-              <img src="' . $image_src . '" alt="' . $article['title'] . '" />
-          </div>
-          <div class="contentBx">
-              <h3>' . $article['title'] . '</h3>
-              <p>' . $article['excerpt'] . '</p>
-              <a href="' . $article_url . '" class="btn">Lire la suite</a>
-          </div>
-      </div>';
-  }
+    foreach ($articles as $article) {
+        // Récupérer le chemin d'image de l'article
+        $image_src = 'images/default-article.jpg'; // Image par défaut
+        
+        // Si une image est définie dans le contenu de l'article
+        if (!empty($article['featured_image'])) {
+            // Normaliser le chemin de l'image pour qu'il fonctionne depuis l'index
+            $image_path = $article['featured_image'];
+            
+            // Supprimer le préfixe "../" s'il est présent
+            if (strpos($image_path, '../') === 0) {
+                $image_path = substr($image_path, 3);
+            }
+            
+            // Vérifier si le chemin commence par "images/" sans le "../"
+            if (strpos($image_path, 'images/') === 0) {
+                $image_src = $image_path;
+            } else {
+                // Si le chemin ne commence pas par "images/", on ajoute ce préfixe
+                $image_src = 'images/' . $image_path;
+            }
+        }
+        
+        // Vérifier si l'image existe physiquement
+        if (!file_exists($image_src) && $image_src != 'images/default-article.jpg') {
+            $image_src = 'images/default-article.jpg'; // Utiliser l'image par défaut si l'image n'existe pas
+        }
+        
+        // Lien vers l'article
+        $article_url = $articles_dir . urlencode($article['file']);
+        
+        // Afficher la carte de l'article
+        echo '
+        <div class="postCard">
+            <div class="imgBx">
+                <img src="' . $image_src . '" alt="' . $article['title'] . '" />
+            </div>
+            <div class="contentBx">
+                <h3>' . $article['title'] . '</h3>
+                <p>' . $article['excerpt'] . '</p>
+                <a href="' . $article_url . '" class="btn">Lire la suite</a>
+            </div>
+        </div>';
+    }
 }
         ?>
       </div>
