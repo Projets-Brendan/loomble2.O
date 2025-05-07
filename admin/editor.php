@@ -1,7 +1,7 @@
 <?php
 // admin/editor.php
-require_once 'auth_check.php';
-require_once 'config.php';
+require_once 'includes/auth_check.php';
+require_once 'includes/config.php';
 
 
 // Initialisation des variables

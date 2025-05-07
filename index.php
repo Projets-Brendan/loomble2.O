@@ -188,30 +188,38 @@
         }
 
   // Afficher les articles
+// Afficher les articles
+// Afficher les articles
 if (empty($articles)) {
   echo "<p>Aucun article n'a encore été publié.</p>";
 } else {
   foreach ($articles as $article) {
-      // Normaliser le chemin de l'image
-      $image_src = !empty($article['featured_image']) ? $article['featured_image'] : 'images/default-article.jpg';
+      // Extraire le chemin de l'image depuis le contenu de l'article
+      $file_path = $articles_dir . $article['file'];
+      $content = file_get_contents($file_path);
       
-      // Assurez-vous que le chemin de l'article est correct par rapport à index.php
+      // Récupérer l'image avec un pattern plus précis
+      preg_match('/<div class="article-featured-image">\s*<img src="(.*?)"/', $content, $img_matches);
+      
+      // Normaliser le chemin de l'image
+      $image_src = '';
+      if (isset($img_matches[1]) && !empty($img_matches[1])) {
+          // Nettoyer le chemin de l'image en supprimant les points au début
+          $image_src = preg_replace('/^\.\.\//', '', $img_matches[1]);
+      } else {
+          // Image par défaut si aucune image n'est trouvée
+          $image_src = 'images/default-article.jpg';
+      }
+      
+      // Lien vers l'article
       $article_url = $articles_dir . urlencode($article['file']);
-
+      
+      // Afficher la carte d'article
       echo '
       <div class="postCard">
-          <div class="imgBx">';
-      if (!empty($article['featured_image'])) {
-          // Vérifier si le chemin commence par un slash ou non
-          if (strpos($image_src, '/') === 0) {
-              $image_src = substr($image_src, 1);
-          }
-          echo '<img src="' . $image_src . '" alt="' . $article['title'] . '" />';
-      } else {
-          // Image par défaut si aucune image n'est définie
-          echo '<img src="images/default-article.jpg" alt="Image par défaut" />';
-      }
-      echo '</div>
+          <div class="imgBx">
+              <img src="' . $image_src . '" alt="' . $article['title'] . '" />
+          </div>
           <div class="contentBx">
               <h3>' . $article['title'] . '</h3>
               <p>' . $article['excerpt'] . '</p>
