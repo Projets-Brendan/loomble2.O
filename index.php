@@ -188,7 +188,6 @@
         }
 
   // Afficher les articles
-  <?php
   // Chemin vers le répertoire des articles
   $articles_dir = 'articles/';
   
@@ -239,36 +238,58 @@
       });
   }
   
+      
   // Afficher les articles
   if (empty($articles)) {
       echo "<p>Aucun article n'a encore été publié.</p>";
   } else {
       foreach ($articles as $article) {
           // Initialiser le chemin d'image par défaut
-          $image_src = 'images/default-article.jpg'; // Image par défaut
-          
-          // Si une image est définie dans l'article
-          if (!empty($article['featured_image'])) {
-              // Normaliser le chemin de l'image
-              $image_path = $article['featured_image'];
-              
-              // Supprimer le préfixe "../" s'il est présent
-              if (strpos($image_path, '../') === 0) {
-                  $image_path = substr($image_path, 3);
-              }
-              
-              // Gérer différents formats de chemin possibles
-              if (file_exists($image_path)) {
-                  $image_src = $image_path;
-              } else if (file_exists('images/articles/' . basename($image_path))) {
-                  $image_src = 'images/articles/' . basename($image_path);
-              } else if (file_exists('images/' . basename($image_path))) {
-                  $image_src = 'images/' . basename($image_path);
-              }
-          }
-          
-          // Lien vers l'article
-          $article_url = $articles_dir . urlencode($article['file']);
+        $image_src = 'images/default-article.jpg'; // Image par défaut
+
+        // Si une image est définie dans l'article et que le fichier existe
+        if (!empty($article['featured_image'])) {
+            // Le chemin extrait est censé être relatif à la racine du site
+            $potential_image_src = $article['featured_image'];
+
+            // Vérifier si le fichier image existe à cet emplacement
+            if (file_exists($potential_image_src)) {
+                $image_src = $potential_image_src;
+            }
+            // Optionnel : Vous pouvez ajouter ici un message d'erreur ou un log
+            // si une image est définie dans l'article mais n'est pas trouvée
+            // sur le serveur à l'emplacement spécifié.
+        }
+
+        // Lien vers l'article
+        $article_url = $articles_dir . urlencode($article['file']);
+
+        // Afficher la carte de l'article
+        echo '
+        <div class="postCard">
+            <div class="imgBx">
+                <img src="' . htmlspecialchars($image_src) . '" alt="' . htmlspecialchars($article['title']) . '" />
+            </div>
+            <div class="contentBx">
+                <h3>' . htmlspecialchars($article['title']) . '</h3>
+                <p>' . htmlspecialchars($article['excerpt']) . '</p>
+                <a href="' . htmlspecialchars($article_url) . '" class="btn">Lire la suite</a>
+            </div>
+        </div>';
+        // Afficher la carte de l'article
+
+        // Afficher la carte de l'article
+        echo '
+        <div class="postCard">
+            <div class="imgBx">
+                <img src="' . htmlspecialchars($image_src) . '" alt="' . htmlspecialchars($article['title']) . '" />
+            </div>
+            <div class="contentBx">
+                <h3>' . htmlspecialchars($article['title']) . '</h3>
+                <p>' . htmlspecialchars($article['excerpt']) . '</p>
+                <a href="' . htmlspecialchars($article_url) . '" class="btn">Lire la suite</a>
+            </div>
+        </div>';
           
           // Afficher la carte de l'article
           echo '
