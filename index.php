@@ -141,84 +141,32 @@
   
   $articles = [];
   
-  // Vérifier si le répertoire existe
-  if (is_dir($articles_dir)) {
-      // Lire tous les fichiers du répertoire
-      $files = scandir($articles_dir);
-      
-      // Parcourir les fichiers
-      foreach ($files as $file) {
-          // S'assurer que c'est un fichier .html et non les entrées '.' ou '..'
-          if ($file !== '.' && $file !== '..' && pathinfo($file, PATHINFO_EXTENSION) === 'html') {
-              $file_path = $articles_dir . $file;
-              
-              // Lire le contenu du fichier HTML de l'article
-              $content = file_get_contents($file_path);
-              
-              // Extraire le titre
-              preg_match('/<h1 class="article-title">(.*?)<\/h1>/', $content, $title_matches);
-              $title = isset($title_matches[1]) ? $title_matches[1] : pathinfo($file, PATHINFO_FILENAME);
-              
-              // Extraire l'image mise en avant (en adaptant à notre nouveau format)
-              preg_match('/<div class="article-featured-image">.*?<img src="(.*?)"/', $content, $image_matches);
-              $featured_image = isset($image_matches[1]) ? $image_matches[1] : '';
-              
-              // Traiter le chemin d'image
-              if (strpos($featured_image, '/') === 0) {
-                  // Si le chemin commence par /, enlever le premier caractère
-                  $featured_image = substr($featured_image, 1);
-              } elseif (strpos($featured_image, '../') === 0) {
-                  // Si le chemin commence par ../, enlever les trois premiers caractères
-                  $featured_image = substr($featured_image, 3);
-              }
-              
-              // Extraire un extrait du contenu
-              preg_match('/<div class="article-content">(.*?)<\/div>/s', $content, $content_matches);
-              $excerpt = isset($content_matches[1]) ? strip_tags($content_matches[1]) : 'Aucun contenu disponible';
-              $excerpt = preg_replace('/\s+/', ' ', $excerpt);
-              $excerpt = substr($excerpt, 0, 150) . (strlen($excerpt) > 150 ? '...' : '');
-              
-              // Ajouter l'article à notre liste
-              $articles[] = [
-                  'file' => $file,
-                  'title' => $title,
-                  'featured_image' => $featured_image,
-                  'excerpt' => $excerpt,
-                  'created' => filemtime($file_path)
-              ];
-          }
-      }
-      
-      // Trier par date décroissante
-      usort($articles, function($a, $b) {
-          return $b['created'] - $a['created'];
-      });
-  }
   
   // Afficher les articles
+  
   if (empty($articles)) {
-      echo "<p>Aucun article n'a encore été publié.</p>";
-  } else {
-      foreach ($articles as $article) {
-          // Pour être sûr d'avoir une image, utiliser une image par défaut si nécessaire
-          $image_src = !empty($article['featured_image']) ? $article['featured_image'] : 'images/banniere.jpg';
-          
-          // Lien vers l'article
-          $article_url = $articles_dir . urlencode($article['file']);
-          
-          echo '
-          <div class="postCard">
-              <div class="imgBx">
-                  <img src="' . $image_src . '" alt="' . htmlspecialchars($article['title']) . '" />
-              </div>
-              <div class="contentBx">
-                  <h3>' . htmlspecialchars($article['title']) . '</h3>
-                  <p>' . htmlspecialchars($article['excerpt']) . '</p>
-                  <a href="' . htmlspecialchars($article_url) . '" class="btn">Lire la suite</a>
-              </div>
-          </div>';
-      }
-  }
+    echo "<p>Aucun article n'a encore été publié.</p>";
+} else {
+    foreach ($articles as $article) {
+        // Pour être sûr d'avoir une image, utiliser une image par défaut si nécessaire
+        $image_src = !empty($article['featured_image']) ? $article['featured_image'] : 'images/banniere.jpg';
+        
+        // Lien vers l'article
+        $article_url = $articles_dir . urlencode($article['file']);
+        
+        echo '
+        <div class="postCard">
+            <div class="imgBx">
+                <img src="' . $image_src . '" alt="' . htmlspecialchars($article['title']) . '" />
+            </div>
+            <div class="contentBx">
+                <h3>' . htmlspecialchars($article['title']) . '</h3>
+                <p>' . htmlspecialchars($article['excerpt']) . '</p>
+                <a href="' . htmlspecialchars($article_url) . '" class="btn">Lire la suite</a>
+            </div>
+        </div>';
+    }
+}
   ?>
 </div>
      

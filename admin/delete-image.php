@@ -1,6 +1,16 @@
 <?php
 // admin/delete-image.php
 require_once 'includes/auth_check.php';
+// Vérification de la sécurité supplémentaire dans delete.php
+$file_path = $articles_dir . $file;
+$real_path = realpath($file_path);
+$real_articles_dir = realpath($articles_dir);
+
+// Vérifier que le fichier existe, est dans le bon répertoire et est un fichier HTML
+if ($real_path && strpos($real_path, $real_articles_dir) === 0 && is_file($real_path) && pathinfo($real_path, PATHINFO_EXTENSION) === 'html') {
+    // ... continuer avec la suppression
+}
+
 
 if (isset($_GET['file']) && !empty($_GET['file'])) {
     $file = $_GET['file'];

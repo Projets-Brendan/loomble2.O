@@ -255,9 +255,9 @@ function optimizeImage($source_path, $destination_path, $quality = 85) {
                 <span class="article-date">Publié le ' . date('d/m/Y') . '</span>
             </div>
             
-            ' . (!empty($image_path) ? '<div class="article-featured-image">
-    <!-- Stocker l\'image avec une URL absolue (sans ../) -->
-    <img src="/' . htmlspecialchars($image_path) . '" alt="' . htmlspecialchars($title) . '">
+            // Dans la partie où l'image est intégrée à l'article
+' . (!empty($image_path) ? '<div class="article-featured-image">
+<img src="/' . htmlspecialchars($image_path) . '" alt="' . htmlspecialchars($title) . '">
 </div>' : '') . '
             
             <div class="article-content">

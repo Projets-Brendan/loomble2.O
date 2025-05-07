@@ -16,8 +16,17 @@ if (is_dir($articles_dir)) {
             // Lire le contenu du fichier HTML de l'article
             $content = file_get_contents($file_path);
             
-            // Remplacer tous les chemins d'images qui commencent par "../"
-            $updated_content = preg_replace('/<img src="\.\.\/([^"]+)"/', '<img src="/$1"', $content);
+            // Remplacer les différents formats de chemins d'images
+            $patterns = [
+                '/<img src="\.\.\/([^"]+)"/', // Chemin ../images/...
+                '/<img src="\/([^"]+)"/'      // Chemin /images/...
+            ];
+            $replacements = [
+                '<img src="/$1"',             // Remplacer par /images/...
+                '<img src="/$1"'              // Laisser tel quel
+            ];
+            
+            $updated_content = preg_replace($patterns, $replacements, $content);
             
             // Écrire le contenu mis à jour
             if ($content !== $updated_content) {

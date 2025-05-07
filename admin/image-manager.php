@@ -303,7 +303,10 @@ $is_popup = isset($_GET['popup']) && $_GET['popup'] === '1';
                         </div>
                     </div>
                     <div class="image-actions">
-                    <?php if ($is_popup): ?>
+                    
+
+<!-- Remplacer ce bloc problématique -->
+<?php if ($is_popup): ?>
 <script>
 // Sélection d'image pour l'éditeur
 document.querySelectorAll('.select-image').forEach(button => {
@@ -311,13 +314,11 @@ document.querySelectorAll('.select-image').forEach(button => {
         const path = this.getAttribute('data-path');
         
         // Standardiser le format du chemin d'image pour l'éditeur
-        // Nous voulons stocker le chemin sans le préfixe "../" si présent
         let standardPath = path;
         if (standardPath.startsWith('../')) {
             standardPath = standardPath.substring(3);
         }
         
-        // Mettre à jour le champ avec le chemin standardisé
         window.opener.document.getElementById('featured_image').value = standardPath;
         
         // Déclencher l'événement change pour mettre à jour la prévisualisation
@@ -327,7 +328,6 @@ document.querySelectorAll('.select-image').forEach(button => {
     });
 });
 </script>
-<?php endif; ?>
 <?php endif; ?>
                     </div>
                 </div>
@@ -365,7 +365,6 @@ document.querySelectorAll('.select-image').forEach(button => {
     });
 });
 <?php endif; ?>
-        <?php endif; ?>
     </script>
 </body>
 </html>
