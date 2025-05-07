@@ -133,6 +133,7 @@
           puisse circuler entre nous, il est important de créer le lien.
         </p>
       </div>
+
       <div class="postGrid">
   <?php
   // Chemin vers le répertoire des articles
@@ -156,30 +157,39 @@
               
               // Extraire le titre
               preg_match('/<h1 class="article-title">(.*?)<\/h1>/', $content, $title_matches);
-              $title = isset($title_matches[1]) ? htmlspecialchars($title_matches[1]) : pathinfo($file, PATHINFO_FILENAME);
+              $title = isset($title_matches[1]) ? $title_matches[1] : pathinfo($file, PATHINFO_FILENAME);
               
-              // Extraire l'image mise en avant
+              // Extraire l'image mise en avant (en adaptant à notre nouveau format)
               preg_match('/<div class="article-featured-image">.*?<img src="(.*?)"/', $content, $image_matches);
               $featured_image = isset($image_matches[1]) ? $image_matches[1] : '';
+              
+              // Traiter le chemin d'image
+              if (strpos($featured_image, '/') === 0) {
+                  // Si le chemin commence par /, enlever le premier caractère
+                  $featured_image = substr($featured_image, 1);
+              } elseif (strpos($featured_image, '../') === 0) {
+                  // Si le chemin commence par ../, enlever les trois premiers caractères
+                  $featured_image = substr($featured_image, 3);
+              }
               
               // Extraire un extrait du contenu
               preg_match('/<div class="article-content">(.*?)<\/div>/s', $content, $content_matches);
               $excerpt = isset($content_matches[1]) ? strip_tags($content_matches[1]) : 'Aucun contenu disponible';
               $excerpt = preg_replace('/\s+/', ' ', $excerpt);
-              $excerpt = htmlspecialchars(substr($excerpt, 0, 150)) . (strlen($excerpt) > 150 ? '...' : '');
+              $excerpt = substr($excerpt, 0, 150) . (strlen($excerpt) > 150 ? '...' : '');
               
-              // Ajouter l'article à notre liste avec le nom de fichier
+              // Ajouter l'article à notre liste
               $articles[] = [
                   'file' => $file,
                   'title' => $title,
                   'featured_image' => $featured_image,
                   'excerpt' => $excerpt,
-                  'created' => filemtime($file_path) // Récupérer le timestamp pour le tri
+                  'created' => filemtime($file_path)
               ];
           }
       }
       
-      // Trier les articles par date de modification décroissante (les plus récents en premier)
+      // Trier par date décroissante
       usort($articles, function($a, $b) {
           return $b['created'] - $a['created'];
       });
@@ -190,33 +200,16 @@
       echo "<p>Aucun article n'a encore été publié.</p>";
   } else {
       foreach ($articles as $article) {
-          // Initialiser le chemin d'image par défaut
-          $image_src = 'images/default-article.jpg'; // Image par défaut
-          
-          // Si une image est définie dans l'article
-          if (!empty($article['featured_image'])) {
-              // Corriger le chemin d'image pour qu'il fonctionne depuis la racine
-              $image_path = $article['featured_image'];
-              
-              // Si le chemin commence par "../", supprimer ce préfixe
-              if (strpos($image_path, '../') === 0) {
-                  $image_path = substr($image_path, 3); // Enlever le "../" du début
-              }
-              
-              // Vérifier si le fichier existe au nouveau chemin
-              if (file_exists($image_path)) {
-                  $image_src = $image_path;
-              }
-          }
+          // Pour être sûr d'avoir une image, utiliser une image par défaut si nécessaire
+          $image_src = !empty($article['featured_image']) ? $article['featured_image'] : 'images/banniere.jpg';
           
           // Lien vers l'article
           $article_url = $articles_dir . urlencode($article['file']);
           
-          // Afficher la carte de l'article (une seule fois)
           echo '
           <div class="postCard">
               <div class="imgBx">
-                  <img src="' . htmlspecialchars($image_src) . '" alt="' . htmlspecialchars($article['title']) . '" />
+                  <img src="' . $image_src . '" alt="' . htmlspecialchars($article['title']) . '" />
               </div>
               <div class="contentBx">
                   <h3>' . htmlspecialchars($article['title']) . '</h3>
@@ -227,8 +220,8 @@
       }
   }
   ?>
-</div>  
-
+</div>
+     
 
       <div class="loadMore" style="display: none;">
          </div>

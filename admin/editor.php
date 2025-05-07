@@ -256,7 +256,8 @@ function optimizeImage($source_path, $destination_path, $quality = 85) {
             </div>
             
             ' . (!empty($image_path) ? '<div class="article-featured-image">
-    <img src="../' . htmlspecialchars($image_path) . '" alt="' . htmlspecialchars($title) . '">
+    <!-- Stocker l\'image avec une URL absolue (sans ../) -->
+    <img src="/' . htmlspecialchars($image_path) . '" alt="' . htmlspecialchars($title) . '">
 </div>' : '') . '
             
             <div class="article-content">
