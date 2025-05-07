@@ -189,60 +189,102 @@
 
   // Afficher les articles
   <?php
+  // Chemin vers le répertoire des articles
+  $articles_dir = 'articles/';
+  
+  $articles = [];
+  
+  // Vérifier si le répertoire existe
+  if (is_dir($articles_dir)) {
+      // Lire tous les fichiers du répertoire
+      $files = scandir($articles_dir);
+  
+      // Parcourir les fichiers
+      foreach ($files as $file) {
+          // S'assurer que c'est un fichier .html et non les entrées '.' ou '..'
+          if ($file !== '.' && $file !== '..' && pathinfo($file, PATHINFO_EXTENSION) === 'html') {
+              $file_path = $articles_dir . $file;
+  
+              // Lire le contenu du fichier HTML de l'article
+              $content = file_get_contents($file_path);
+  
+              // Extraire le titre
+              preg_match('/<h1 class="article-title">(.*?)<\/h1>/', $content, $title_matches);
+              $title = isset($title_matches[1]) ? htmlspecialchars($title_matches[1]) : pathinfo($file, PATHINFO_FILENAME);
+  
+              // Extraire l'image mise en avant
+              preg_match('/<div class="article-featured-image">.*?<img src="(.*?)"/', $content, $image_matches);
+              $featured_image = isset($image_matches[1]) ? htmlspecialchars($image_matches[1]) : '';
+  
+              // Extraire un extrait du contenu
+              preg_match('/<div class="article-content">(.*?)<\/div>/s', $content, $content_matches);
+              $excerpt = isset($content_matches[1]) ? strip_tags($content_matches[1]) : 'Aucun contenu disponible';
+              $excerpt = preg_replace('/\s+/', ' ', $excerpt); // Remplacer les espaces multiples par un simple espace
+              $excerpt = htmlspecialchars(substr($excerpt, 0, 150)) . (strlen($excerpt) > 150 ? '...' : ''); // Limiter à 150 caractères
+  
+              // Ajouter l'article à notre liste avec le nom de fichier
+              $articles[] = [
+                  'file' => $file,
+                  'title' => $title,
+                  'featured_image' => $featured_image,
+                  'excerpt' => $excerpt,
+                  'created' => filemtime($file_path) // Récupérer le timestamp pour le tri
+              ];
+          }
+      }
+  
+      // Trier les articles par date de modification décroissante (les plus récents en premier)
+      usort($articles, function($a, $b) {
+          return $b['created'] - $a['created'];
+      });
+  }
+  
   // Afficher les articles
-  <?php
-// Remplacer le bloc de code suivant dans index.php (environ ligne 221)
-
-// Afficher les articles
-if (empty($articles)) {
-    echo "<p>Aucun article n'a encore été publié.</p>";
-} else {
-    foreach ($articles as $article) {
-        // Récupérer le chemin d'image de l'article
-        $image_src = 'images/default-article.jpg'; // Image par défaut
-        
-        // Si une image est définie dans le contenu de l'article
-        if (!empty($article['featured_image'])) {
-            // Normaliser le chemin de l'image pour qu'il fonctionne depuis l'index
-            $image_path = $article['featured_image'];
-            
-            // Supprimer le préfixe "../" s'il est présent
-            if (strpos($image_path, '../') === 0) {
-                $image_path = substr($image_path, 3);
-            }
-            
-            // Vérifier si le chemin commence par "images/" sans le "../"
-            if (strpos($image_path, 'images/') === 0) {
-                $image_src = $image_path;
-            } else {
-                // Si le chemin ne commence pas par "images/", on ajoute ce préfixe
-                $image_src = 'images/' . $image_path;
-            }
-        }
-        
-        // Vérifier si l'image existe physiquement
-        if (!file_exists($image_src) && $image_src != 'images/default-article.jpg') {
-            $image_src = 'images/default-article.jpg'; // Utiliser l'image par défaut si l'image n'existe pas
-        }
-        
-        // Lien vers l'article
-        $article_url = $articles_dir . urlencode($article['file']);
-        
-        // Afficher la carte de l'article
-        echo '
-        <div class="postCard">
-            <div class="imgBx">
-                <img src="' . $image_src . '" alt="' . $article['title'] . '" />
-            </div>
-            <div class="contentBx">
-                <h3>' . $article['title'] . '</h3>
-                <p>' . $article['excerpt'] . '</p>
-                <a href="' . $article_url . '" class="btn">Lire la suite</a>
-            </div>
-        </div>';
-    }
-}
-        ?>
+  if (empty($articles)) {
+      echo "<p>Aucun article n'a encore été publié.</p>";
+  } else {
+      foreach ($articles as $article) {
+          // Initialiser le chemin d'image par défaut
+          $image_src = 'images/default-article.jpg'; // Image par défaut
+          
+          // Si une image est définie dans l'article
+          if (!empty($article['featured_image'])) {
+              // Normaliser le chemin de l'image
+              $image_path = $article['featured_image'];
+              
+              // Supprimer le préfixe "../" s'il est présent
+              if (strpos($image_path, '../') === 0) {
+                  $image_path = substr($image_path, 3);
+              }
+              
+              // Gérer différents formats de chemin possibles
+              if (file_exists($image_path)) {
+                  $image_src = $image_path;
+              } else if (file_exists('images/articles/' . basename($image_path))) {
+                  $image_src = 'images/articles/' . basename($image_path);
+              } else if (file_exists('images/' . basename($image_path))) {
+                  $image_src = 'images/' . basename($image_path);
+              }
+          }
+          
+          // Lien vers l'article
+          $article_url = $articles_dir . urlencode($article['file']);
+          
+          // Afficher la carte de l'article
+          echo '
+          <div class="postCard">
+              <div class="imgBx">
+                  <img src="' . $image_src . '" alt="' . $article['title'] . '" />
+              </div>
+              <div class="contentBx">
+                  <h3>' . $article['title'] . '</h3>
+                  <p>' . $article['excerpt'] . '</p>
+                  <a href="' . $article_url . '" class="btn">Lire la suite</a>
+              </div>
+          </div>';
+      }
+  }
+  ?>
       </div>
 
 
