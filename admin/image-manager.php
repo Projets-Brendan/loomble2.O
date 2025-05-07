@@ -1,6 +1,6 @@
 <?php
 // admin/image-manager.php
-require_once 'auth_check.php';
+require_once 'includes/auth_check.php';
 
 
 // Répertoire des images

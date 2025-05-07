@@ -1,7 +1,7 @@
 <?php
 
 // admin/dashboard.php
-require_once 'auth_check.php';
+require_once 'includes/auth_check.php';
 
 // Récupérer les messages
 $success_message = isset($_GET['message']) ? $_GET['message'] : '';

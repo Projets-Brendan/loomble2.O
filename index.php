@@ -190,31 +190,24 @@
   // Afficher les articles
 // Afficher les articles
 // Afficher les articles
+// Afficher les articles
 if (empty($articles)) {
   echo "<p>Aucun article n'a encore été publié.</p>";
 } else {
   foreach ($articles as $article) {
-      // Extraire le chemin de l'image depuis le contenu de l'article
-      $file_path = $articles_dir . $article['file'];
-      $content = file_get_contents($file_path);
+      // Récupérer le chemin d'image de l'article
+      $image_src = 'images/default-article.jpg'; // Image par défaut
       
-      // Récupérer l'image avec un pattern plus précis
-      preg_match('/<div class="article-featured-image">\s*<img src="(.*?)"/', $content, $img_matches);
-      
-      // Normaliser le chemin de l'image
-      $image_src = '';
-      if (isset($img_matches[1]) && !empty($img_matches[1])) {
-          // Nettoyer le chemin de l'image en supprimant les points au début
-          $image_src = preg_replace('/^\.\.\//', '', $img_matches[1]);
-      } else {
-          // Image par défaut si aucune image n'est trouvée
-          $image_src = 'images/default-article.jpg';
+      // Si une image est définie dans le contenu de l'article
+      if (!empty($article['featured_image'])) {
+          // Supprimer le préfixe "../" si présent
+          $image_src = str_replace('../', '', $article['featured_image']);
       }
       
       // Lien vers l'article
       $article_url = $articles_dir . urlencode($article['file']);
       
-      // Afficher la carte d'article
+      // Afficher la carte de l'article
       echo '
       <div class="postCard">
           <div class="imgBx">
