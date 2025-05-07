@@ -133,61 +133,8 @@
           puisse circuler entre nous, il est important de créer le lien.
         </p>
       </div>
-
       <div class="postGrid">
-        <?php
-        // Chemin vers le répertoire des articles
-        $articles_dir = 'articles/'; // Assurez-vous que ce chemin est correct par rapport à index.php
-
-        $articles = [];
-
-        // Vérifier si le répertoire existe
-        if (is_dir($articles_dir)) {
-            // Lire tous les fichiers du répertoire
-            $files = scandir($articles_dir);
-
-            // Parcourir les fichiers
-            foreach ($files as $file) {
-                // S'assurer que c'est un fichier .html et non les entrées '.' ou '..'
-                if ($file !== '.' && $file !== '..' && pathinfo($file, PATHINFO_EXTENSION) === 'html') {
-                    $file_path = $articles_dir . $file;
-
-                    // Lire le contenu du fichier HTML de l'article
-                    $content = file_get_contents($file_path);
-
-                    // Extraire le titre (similaire à dashboard.php)
-                    preg_match('/<h1 class="article-title">(.*?)<\/h1>/', $content, $title_matches);
-                    $title = isset($title_matches[1]) ? htmlspecialchars($title_matches[1]) : pathinfo($file, PATHINFO_FILENAME);
-
-                     // Extraire l'image mise en avant
-                    preg_match('/<div class="article-featured-image">.*?<img src="(.*?)"/', $content, $image_matches);
-                    $featured_image = isset($image_matches[1]) ? htmlspecialchars($image_matches[1]) : ''; // Utilisez une image par défaut si aucune n'est trouvée
-
-                    // Extraire un extrait du contenu (similaire à dashboard.php)
-                    preg_match('/<div class="article-content">(.*?)<\/div>/s', $content, $content_matches);
-                    $excerpt = isset($content_matches[1]) ? strip_tags($content_matches[1]) : 'Aucun contenu disponible';
-                    $excerpt = preg_replace('/\s+/', ' ', $excerpt); // Remplacer les espaces multiples par un simple espace
-                    $excerpt = htmlspecialchars(substr($excerpt, 0, 150)) . (strlen($excerpt) > 150 ? '...' : ''); // Limiter à 150 caractères
-
-                    // Ajouter l'article à notre liste avec le nom de fichier
-                    $articles[] = [
-                        'file' => $file,
-                        'title' => $title,
-                        'featured_image' => $featured_image,
-                        'excerpt' => $excerpt,
-                         // Vous pouvez ajouter d'autres informations si nécessaire (date, tags, etc.)
-                         'created' => filemtime($file_path) // Récupérer le timestamp pour le tri
-                    ];
-                }
-            }
-
-            // Trier les articles par date de modification décroissante (les plus récents en premier)
-             usort($articles, function($a, $b) {
-                return $b['created'] - $a['created'];
-            });
-        }
-
-  // Afficher les articles
+  <?php
   // Chemin vers le répertoire des articles
   $articles_dir = 'articles/';
   
@@ -197,30 +144,30 @@
   if (is_dir($articles_dir)) {
       // Lire tous les fichiers du répertoire
       $files = scandir($articles_dir);
-  
+      
       // Parcourir les fichiers
       foreach ($files as $file) {
           // S'assurer que c'est un fichier .html et non les entrées '.' ou '..'
           if ($file !== '.' && $file !== '..' && pathinfo($file, PATHINFO_EXTENSION) === 'html') {
               $file_path = $articles_dir . $file;
-  
+              
               // Lire le contenu du fichier HTML de l'article
               $content = file_get_contents($file_path);
-  
+              
               // Extraire le titre
               preg_match('/<h1 class="article-title">(.*?)<\/h1>/', $content, $title_matches);
               $title = isset($title_matches[1]) ? htmlspecialchars($title_matches[1]) : pathinfo($file, PATHINFO_FILENAME);
-  
+              
               // Extraire l'image mise en avant
               preg_match('/<div class="article-featured-image">.*?<img src="(.*?)"/', $content, $image_matches);
-              $featured_image = isset($image_matches[1]) ? htmlspecialchars($image_matches[1]) : '';
-  
+              $featured_image = isset($image_matches[1]) ? $image_matches[1] : '';
+              
               // Extraire un extrait du contenu
               preg_match('/<div class="article-content">(.*?)<\/div>/s', $content, $content_matches);
               $excerpt = isset($content_matches[1]) ? strip_tags($content_matches[1]) : 'Aucun contenu disponible';
-              $excerpt = preg_replace('/\s+/', ' ', $excerpt); // Remplacer les espaces multiples par un simple espace
-              $excerpt = htmlspecialchars(substr($excerpt, 0, 150)) . (strlen($excerpt) > 150 ? '...' : ''); // Limiter à 150 caractères
-  
+              $excerpt = preg_replace('/\s+/', ' ', $excerpt);
+              $excerpt = htmlspecialchars(substr($excerpt, 0, 150)) . (strlen($excerpt) > 150 ? '...' : '');
+              
               // Ajouter l'article à notre liste avec le nom de fichier
               $articles[] = [
                   'file' => $file,
@@ -231,82 +178,56 @@
               ];
           }
       }
-  
+      
       // Trier les articles par date de modification décroissante (les plus récents en premier)
       usort($articles, function($a, $b) {
           return $b['created'] - $a['created'];
       });
   }
   
-      
   // Afficher les articles
   if (empty($articles)) {
       echo "<p>Aucun article n'a encore été publié.</p>";
   } else {
       foreach ($articles as $article) {
           // Initialiser le chemin d'image par défaut
-        $image_src = 'images/default-article.jpg'; // Image par défaut
-
-        // Si une image est définie dans l'article et que le fichier existe
-        if (!empty($article['featured_image'])) {
-            // Le chemin extrait est censé être relatif à la racine du site
-            $potential_image_src = $article['featured_image'];
-
-            // Vérifier si le fichier image existe à cet emplacement
-            if (file_exists($potential_image_src)) {
-                $image_src = $potential_image_src;
-            }
-            // Optionnel : Vous pouvez ajouter ici un message d'erreur ou un log
-            // si une image est définie dans l'article mais n'est pas trouvée
-            // sur le serveur à l'emplacement spécifié.
-        }
-
-        // Lien vers l'article
-        $article_url = $articles_dir . urlencode($article['file']);
-
-        // Afficher la carte de l'article
-        echo '
-        <div class="postCard">
-            <div class="imgBx">
-                <img src="' . htmlspecialchars($image_src) . '" alt="' . htmlspecialchars($article['title']) . '" />
-            </div>
-            <div class="contentBx">
-                <h3>' . htmlspecialchars($article['title']) . '</h3>
-                <p>' . htmlspecialchars($article['excerpt']) . '</p>
-                <a href="' . htmlspecialchars($article_url) . '" class="btn">Lire la suite</a>
-            </div>
-        </div>';
-        // Afficher la carte de l'article
-
-        // Afficher la carte de l'article
-        echo '
-        <div class="postCard">
-            <div class="imgBx">
-                <img src="' . htmlspecialchars($image_src) . '" alt="' . htmlspecialchars($article['title']) . '" />
-            </div>
-            <div class="contentBx">
-                <h3>' . htmlspecialchars($article['title']) . '</h3>
-                <p>' . htmlspecialchars($article['excerpt']) . '</p>
-                <a href="' . htmlspecialchars($article_url) . '" class="btn">Lire la suite</a>
-            </div>
-        </div>';
+          $image_src = 'images/default-article.jpg'; // Image par défaut
           
-          // Afficher la carte de l'article
+          // Si une image est définie dans l'article
+          if (!empty($article['featured_image'])) {
+              // Corriger le chemin d'image pour qu'il fonctionne depuis la racine
+              $image_path = $article['featured_image'];
+              
+              // Si le chemin commence par "../", supprimer ce préfixe
+              if (strpos($image_path, '../') === 0) {
+                  $image_path = substr($image_path, 3); // Enlever le "../" du début
+              }
+              
+              // Vérifier si le fichier existe au nouveau chemin
+              if (file_exists($image_path)) {
+                  $image_src = $image_path;
+              }
+          }
+          
+          // Lien vers l'article
+          $article_url = $articles_dir . urlencode($article['file']);
+          
+          // Afficher la carte de l'article (une seule fois)
           echo '
           <div class="postCard">
               <div class="imgBx">
-                  <img src="' . $image_src . '" alt="' . $article['title'] . '" />
+                  <img src="' . htmlspecialchars($image_src) . '" alt="' . htmlspecialchars($article['title']) . '" />
               </div>
               <div class="contentBx">
-                  <h3>' . $article['title'] . '</h3>
-                  <p>' . $article['excerpt'] . '</p>
-                  <a href="' . $article_url . '" class="btn">Lire la suite</a>
+                  <h3>' . htmlspecialchars($article['title']) . '</h3>
+                  <p>' . htmlspecialchars($article['excerpt']) . '</p>
+                  <a href="' . htmlspecialchars($article_url) . '" class="btn">Lire la suite</a>
               </div>
           </div>';
       }
   }
   ?>
-      </div>
+</div>  
 
 
       <div class="loadMore" style="display: none;">
