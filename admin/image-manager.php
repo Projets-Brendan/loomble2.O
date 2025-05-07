@@ -14,6 +14,29 @@ if (!is_dir($images_dir)) {
 $message = '';
 $error = '';
 
+// Fonction pour valider les dimensions et la taille du fichier
+function validateImage($file) {
+    // Taille maximale (5 Mo)
+    $max_size = 5 * 1024 * 1024;
+    if ($file['size'] > $max_size) {
+        return "L'image est trop volumineuse. La taille maximale est de 5 Mo.";
+    }
+    
+    // Vérifier si c'est une image valide
+    $image_info = getimagesize($file['tmp_name']);
+    if (!$image_info) {
+        return "Le fichier téléchargé n'est pas une image valide.";
+    }
+    
+    // Vérifier les dimensions
+    list($width, $height) = $image_info;
+    if ($width > 2500 || $height > 2500) {
+        return "Les dimensions de l'image sont trop grandes. La largeur et la hauteur maximales sont de 2500 pixels.";
+    }
+    
+    return true;
+}
+
 // Traitement de l'upload d'image
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['image'])) {
     $file = $_FILES['image'];
@@ -305,14 +328,23 @@ $is_popup = isset($_GET['popup']) && $_GET['popup'] === '1';
         });
         
         <?php if ($is_popup): ?>
-        // Sélection d'image pour l'éditeur
-        document.querySelectorAll('.select-image').forEach(button => {
-            button.addEventListener('click', function() {
-                const path = this.getAttribute('data-path');
-                window.opener.document.getElementById('featured_image').value = path;
-                window.close();
-            });
-        });
+// Sélection d'image pour l'éditeur
+document.querySelectorAll('.select-image').forEach(button => {
+    button.addEventListener('click', function() {
+        const path = this.getAttribute('data-path');
+        // Standardiser le format du chemin d'image pour l'éditeur
+        if (path.startsWith('../')) {
+            window.opener.document.getElementById('featured_image').value = path.substring(3);
+        } else {
+            window.opener.document.getElementById('featured_image').value = path;
+        }
+        // Déclencher l'événement change pour mettre à jour la prévisualisation
+        const event = new Event('change');
+        window.opener.document.getElementById('featured_image').dispatchEvent(event);
+        window.close();
+    });
+});
+<?php endif; ?>
         <?php endif; ?>
     </script>
 </body>

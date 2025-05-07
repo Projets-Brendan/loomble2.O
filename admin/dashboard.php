@@ -51,6 +51,16 @@ function getArticleExcerpt($filePath, $maxLength = 150) {
     }
     return 'Aucun contenu disponible';
 }
+
+// Récupérer l'image mise en avant d'un article
+function getArticleImage($filePath) {
+    if (file_exists($filePath)) {
+        $content = file_get_contents($filePath);
+        preg_match('/<div class="article-featured-image">.*?<img src="(.*?)"/', $content, $matches);
+        return isset($matches[1]) ? $matches[1] : '';
+    }
+    return '';
+}
 ?>
 
 <!DOCTYPE html>

@@ -187,46 +187,39 @@
             });
         }
 
-        // Afficher les articles
-        if (empty($articles)) {
-            echo "<p>Aucun article n'a encore été publié.</p>";
-        } else {
-            foreach ($articles as $article) {
-                // Déterminer le chemin de l'image, en s'assurant qu'il est correct par rapport à index.php
-                // Si l'image est stockée dans un sous-dossier comme 'images/', le chemin doit en tenir compte.
-                // Si featured_image est déjà un chemin complet depuis la racine du site (ex: /images/monimage.jpg)
-                // utilisez simplement $article['featured_image'].
-                // Si featured_image est un chemin relatif depuis le dossier articles (ex: ../images/monimage.jpg),
-                // il faut ajuster le chemin pour qu'il soit correct depuis index.php.
-                // Dans votre cas, les images semblent être dans ../images/articles/ ou similaires par rapport à l'éditeur.
-                // Si featured_image dans le fichier article est 'images/nom_image.jpg' (relatif à la racine du site)
-                $image_src = !empty($article['featured_image']) ? $article['featured_image'] : 'placeholder_image.jpg'; // Image par défaut si pas d'image
+  // Afficher les articles
+if (empty($articles)) {
+  echo "<p>Aucun article n'a encore été publié.</p>";
+} else {
+  foreach ($articles as $article) {
+      // Normaliser le chemin de l'image
+      $image_src = !empty($article['featured_image']) ? $article['featured_image'] : 'images/default-article.jpg';
+      
+      // Assurez-vous que le chemin de l'article est correct par rapport à index.php
+      $article_url = $articles_dir . urlencode($article['file']);
 
-                // Assurez-vous que le chemin de l'article est correct par rapport à index.php
-                $article_url = $articles_dir . urlencode($article['file']);
-
-
-                echo '
-                <div class="postCard">
-                    <div class="imgBx">';
-                // Afficher l'image si elle existe, sinon une image par défaut ou rien
-                 if (!empty($article['featured_image'])) {
-                     // Supposons que l'image_path dans le fichier article est 'images/uploads/mon-image.jpg'
-                     // Si votre répertoire d'images est 'images/' à la racine du site, le chemin est déjà bon.
-                     echo '<img src="' . $article['featured_image'] . '" alt="' . $article['title'] . '" />';
-                 } else {
-                     // Optionnel : afficher une image par défaut si aucune image n'est définie
-                     // echo '<img src="images/default_article_image.jpg" alt="Image par défaut" />';
-                 }
-                echo '</div>
-                    <div class="contentBx">
-                        <h3>' . $article['title'] . '</h3>
-                        <p>' . $article['excerpt'] . '</p>
-                        <a href="' . $article_url . '" class="btn">Lire la suite</a>
-                    </div>
-                </div>';
-            }
-        }
+      echo '
+      <div class="postCard">
+          <div class="imgBx">';
+      if (!empty($article['featured_image'])) {
+          // Vérifier si le chemin commence par un slash ou non
+          if (strpos($image_src, '/') === 0) {
+              $image_src = substr($image_src, 1);
+          }
+          echo '<img src="' . $image_src . '" alt="' . $article['title'] . '" />';
+      } else {
+          // Image par défaut si aucune image n'est définie
+          echo '<img src="images/default-article.jpg" alt="Image par défaut" />';
+      }
+      echo '</div>
+          <div class="contentBx">
+              <h3>' . $article['title'] . '</h3>
+              <p>' . $article['excerpt'] . '</p>
+              <a href="' . $article_url . '" class="btn">Lire la suite</a>
+          </div>
+      </div>';
+  }
+}
         ?>
       </div>
 
