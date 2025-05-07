@@ -16,6 +16,29 @@ $message = '';
 $error = '';
 $tags = '';
 
+// Fonction pour valider les dimensions et la taille du fichier
+function validateImage($file) {
+    // Taille maximale (5 Mo)
+    $max_size = 5 * 1024 * 1024;
+    if ($file['size'] > $max_size) {
+        return "L'image est trop volumineuse. La taille maximale est de 5 Mo.";
+    }
+    
+    // Vérifier si c'est une image valide
+    $image_info = getimagesize($file['tmp_name']);
+    if (!$image_info) {
+        return "Le fichier téléchargé n'est pas une image valide.";
+    }
+    
+    // Vérifier les dimensions
+    list($width, $height) = $image_info;
+    if ($width > 2500 || $height > 2500) {
+        return "Les dimensions de l'image sont trop grandes. La largeur et la hauteur maximales sont de 2500 pixels.";
+    }
+    
+    return true;
+}
+
 // Vérifier si on est en mode édition
 if (isset($_GET['edit']) && !empty($_GET['edit'])) {
     $file_to_edit = $_GET['edit'];
@@ -113,41 +136,41 @@ if (isset($_POST['auto_save']) && $_POST['auto_save'] === '1') {
         exit; // Arrêter l'exécution pour les requêtes AJAX
     }
 }
- // Gestion de l'upload d'image
+// Gestion de l'upload d'image
 $image_path = $featured_image;
 if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-// Ajouter après if ($file['error'] === UPLOAD_ERR_OK) {
-    $validation_result = validateImage($file);
+    // Ajouter après if ($_FILES['image']['error'] === UPLOAD_ERR_OK) {
+    $validation_result = validateImage($_FILES['image']);
     if ($validation_result !== true) {
         $error = $validation_result;
     } else {
-        // Continuer avec le code existant pour le traitement de l'image
-
-    $target_dir = $config['images_dir'];
-    if (!is_dir($target_dir)) {
-        mkdir($target_dir, 0755, true);
-    }
-    
-    $file_info = pathinfo($_FILES['image']['name']);
-    $file_ext = strtolower($file_info['extension']);
-    
-    if (in_array($file_ext, $config['allowed_image_types'])) {
-        $new_file_name = $slug . '-' . time() . '.' . $file_ext;
-        $target_file = $target_dir . $new_file_name;
-        
-        if (move_uploaded_file($file['tmp_name'], $destination)) {
-            // Optimiser l'image si c'est un format que nous pouvons optimiser
-            $mime_type = mime_content_type($destination);
-            if (in_array($mime_type, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
-                optimizeImage($destination, $destination);
-            }
-            
-            $message = "L'image a été téléchargée et optimisée avec succès.";
-        } else {
-            $error = "Erreur lors du déplacement du fichier.";
+        $target_dir = $config['images_dir'];
+        if (!is_dir($target_dir)) {
+            mkdir($target_dir, 0755, true);
         }
-    } else {
-        $error = "Format d'image non pris en charge.";
+        
+        $file_info = pathinfo($_FILES['image']['name']);
+        $file_ext = strtolower($file_info['extension']);
+        
+        if (in_array($file_ext, $config['allowed_image_types'])) {
+            $new_file_name = $slug . '-' . time() . '.' . $file_ext;
+            $target_file = $target_dir . $new_file_name;
+            
+            if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
+                // Correction du chemin d'image pour qu'il soit standard et cohérent
+                $image_path = 'images/articles/' . $new_file_name;
+                
+                // Optimiser l'image si c'est un format que nous pouvons optimiser
+                $mime_type = mime_content_type($target_file);
+                if (in_array($mime_type, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
+                    optimizeImage($target_file, $target_file);
+                }
+            } else {
+                $error = "Erreur lors de l'upload de l'image.";
+            }
+        } else {
+            $error = "Format d'image non pris en charge.";
+        }
     }
 }
 function optimizeImage($source_path, $destination_path, $quality = 85) {
