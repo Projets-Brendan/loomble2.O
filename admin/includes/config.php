@@ -50,3 +50,4 @@ function isPathSafe($path, $base_dir) {
     
     return strpos($real_path, $real_base) === 0;
 }
+?>

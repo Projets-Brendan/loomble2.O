@@ -1,4 +1,58 @@
-<!-- Correction du HTML -->
+<?php
+// Chemin vers le répertoire des articles
+$articles_dir = 'articles/';
+
+// Récupérer la liste des articles
+$articles = [];
+
+if (is_dir($articles_dir)) {
+    $files = scandir($articles_dir);
+    foreach ($files as $file) {
+        if ($file !== '.' && $file !== '..' && pathinfo($file, PATHINFO_EXTENSION) === 'html') {
+            // Lire le fichier pour extraire le titre et le contenu
+            $content = file_get_contents($articles_dir . $file);
+            
+            // Extraire le titre
+            preg_match('/<h1 class="article-title">(.*?)<\/h1>/', $content, $title_matches);
+            $title = isset($title_matches[1]) ? $title_matches[1] : pathinfo($file, PATHINFO_FILENAME);
+            
+            // Extraire l'image mise en avant
+            preg_match('/<div class="article-featured-image">.*?<img src="(.*?)"/', $content, $image_matches);
+            $featured_image = isset($image_matches[1]) ? $image_matches[1] : '';
+            
+            // Extraire un extrait du contenu
+            preg_match('/<div class="article-content">(.*?)<\/div>\s*<div class="article-tags">/', $content, $content_matches, PREG_OFFSET_CAPTURE);
+            if (isset($content_matches[1])) {
+                $article_content = $content_matches[1][0];
+            } else {
+                preg_match('/<div class="article-content">(.*?)<\/div>/s', $content, $content_matches);
+                $article_content = isset($content_matches[1]) ? $content_matches[1] : '';
+            }
+            
+            // Créer un extrait court
+            $excerpt = strip_tags($article_content);
+            $excerpt = preg_replace('/\s+/', ' ', $excerpt);
+            $excerpt = substr($excerpt, 0, 150) . '...';
+            
+            // Obtenir la date de création du fichier
+            $created = date('Y-m-d', filemtime($articles_dir . $file));
+            
+            $articles[] = [
+                'file' => $file,
+                'title' => $title,
+                'excerpt' => $excerpt,
+                'featured_image' => $featured_image,
+                'created' => $created
+            ];
+        }
+    }
+    
+    // Trier par date décroissante
+    usort($articles, function($a, $b) {
+        return strtotime($b['created']) - strtotime($a['created']);
+    });
+}
+?>
 <!DOCTYPE html>
 <html>
   <head>
@@ -12,7 +66,6 @@
     <link rel="stylesheet" href="style.css" />
 
     <!-- Favicon -->
-
     <link rel="icon" href="favicon.ico" type="image/x-icon" />
     <link
       rel="icon"
@@ -44,22 +97,20 @@
   </head>
   <body>
     <!-- Navigation -->
-
     <header>
       <a href="#" class="logo">Loomble</a>
       <div class="menuToggle"></div>
     </header>
 
     <ul class="navigation">
-      <li><a href="#home">Acceuil</a></li>
+      <li><a href="#home">Accueil</a></li>
       <li><a href="#about">Présentation</a></li>
       <li><a href="#posts">Le livre</a></li>
       <li><a href="#services">Les 3 projets</a></li>
       <li><a href="#contact">Contact</a></li>
     </ul>
 
-    <!-- Titre et acceuil du site -->
-
+    <!-- Titre et accueil du site -->
     <section class="banner" id="home">
       <img src="images/banniere.jpg" class="cover" />
       <div class="contentBx">
@@ -97,7 +148,7 @@
             sentez une connexion avec ces mots mais aussi avec l'histoire que je
             vous partage, contactez-moi si vous êtes intéressés par ce début
             d'histoire concrète qu'on écrira et qu'on créera ensemble. Et si je
-            vous disais qu’elle avait déjà lieu ? <br /><br />
+            vous disais qu'elle avait déjà lieu ? <br /><br />
             En attendant, pour établir un premier contact et lien avec vous,
             j'ai pris la décision de me livrer entièrement. Étant un ancien
             malade et pair-aidant, j'ai conscience que le savoir expérientiel
@@ -123,7 +174,6 @@
     </section>
 
     <!-- Les articles dédiés au livre -->
-
     <section class="posts" id="posts">
       <div class="title">
         <h2>J'ai voulu être un arbre</h2>
@@ -135,51 +185,41 @@
       </div>
 
       <div class="postGrid">
-  <?php
-  // Chemin vers le répertoire des articles
-  $articles_dir = 'articles/';
-  
-  $articles = [];
-  
-  
-  // Afficher les articles
-  
-  if (empty($articles)) {
-    echo "<p>Aucun article n'a encore été publié.</p>";
-} else {
-    foreach ($articles as $article) {
-        // Pour être sûr d'avoir une image, utiliser une image par défaut si nécessaire
-        $image_src = !empty($article['featured_image']) ? $article['featured_image'] : 'images/banniere.jpg';
-        
-        // Lien vers l'article
-        $article_url = $articles_dir . urlencode($article['file']);
-        
-        echo '
-        <div class="postCard">
-            <div class="imgBx">
-                <img src="' . $image_src . '" alt="' . htmlspecialchars($article['title']) . '" />
+        <?php if (empty($articles)): ?>
+          <p>Aucun article n'a encore été publié.</p>
+        <?php else: ?>
+          <?php foreach ($articles as $article): ?>
+            <?php
+              // Pour être sûr d'avoir une image, utiliser une image par défaut si nécessaire
+              $image_src = !empty($article['featured_image']) ? $article['featured_image'] : 'images/banniere.jpg';
+              
+              // Corriger le chemin d'image si nécessaire
+              if (strpos($image_src, '../') === 0) {
+                  $image_src = substr($image_src, 3);
+              }
+              
+              // Lien vers l'article
+              $article_url = $articles_dir . urlencode($article['file']);
+            ?>
+            <div class="postCard">
+              <div class="imgBx">
+                <img src="<?php echo htmlspecialchars($image_src); ?>" alt="<?php echo htmlspecialchars($article['title']); ?>" />
+              </div>
+              <div class="contentBx">
+                <h3><?php echo htmlspecialchars($article['title']); ?></h3>
+                <p><?php echo htmlspecialchars($article['excerpt']); ?></p>
+                <a href="<?php echo htmlspecialchars($article_url); ?>" class="btn">Lire la suite</a>
+              </div>
             </div>
-            <div class="contentBx">
-                <h3>' . htmlspecialchars($article['title']) . '</h3>
-                <p>' . htmlspecialchars($article['excerpt']) . '</p>
-                <a href="' . htmlspecialchars($article_url) . '" class="btn">Lire la suite</a>
-            </div>
-        </div>';
-    }
-}
-  ?>
-</div>
-     
-
-      <div class="loadMore" style="display: none;">
-         </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
     </section>
 
     <!-- Les projets -->
-
     <section class="services" id="services">
       <div class="title">
-        <h2>Les trois projets pricipaux</h2>
+        <h2>Les trois projets principaux</h2>
         <p>
           Comment me mettre concrètement à l'action pour créer du lien ? Je
           travaille sur trois objectifs qui permettront à la fois d'avancer dans
@@ -233,7 +273,6 @@
     </section>
 
     <!-- Le formulaire -->
-
     <section class="contact" id="contact">
       <div class="title">
         <h2>Me contacter</h2>
@@ -267,14 +306,13 @@
             <span>Ne remplissez pas ce champ</span>
           </div>
           <div class="inputBox">
-            <input type="submit" value="Send Message" />
+            <input type="submit" value="Envoyer le message" />
           </div>
         </form>
       </div>
     </section>
 
-    <!-- Informations complétaire -->
-
+    <!-- Informations complémentaires -->
     <footer>
       <div class="footerContent">
         <div class="footerSection">
@@ -284,22 +322,11 @@
             machine à tisser - Elle tisse les liens dans l'unique objectif de la
             quête de la vérité et de vivre en paix.
           </p>
-          <!-- <ul class="socialIcons">
-            <li>
-              <a href="#"><img src="images/facebook.png" alt="Facebook" /></a>
-            </li>
-            <li>
-              <a href="#"><img src="images/twitter.png" alt="Twitter" /></a>
-            </li>
-            <li>
-              <a href="#"><img src="images/instagram.png" alt="Instagram" /></a>
-            </li>
-          </ul>-->
         </div>
         <div class="footerSection">
-          <h3>Quick Links</h3>
+          <h3>Liens rapides</h3>
           <ul class="footerLinks">
-            <li><a href="#home">Acceuil</a></li>
+            <li><a href="#home">Accueil</a></li>
             <li><a href="#about">Présentation</a></li>
             <li><a href="#posts">Livre</a></li>
             <li><a href="#services">Les 3 projets</a></li>
@@ -307,12 +334,8 @@
           </ul>
         </div>
         <div class="footerSection">
-          <h3>Contact Info</h3>
+          <h3>Contact</h3>
           <ul class="contactInfo">
-            <!-- <li>
-              <span><img src="images/location.png" alt="Location" /></span>
-              <span>Rennes</span>
-            </li>-->
             <li>
               <span><img src="images/email.png" alt="Email" /></span>
               <span>lien@loomble.net</span>
@@ -325,8 +348,7 @@
         </div>
       </div>
       <div class="copyright">
-          <p>&copy; 2025 Loomble. All Rights Reserved. <a href="admin/index.php" class="admin-link">Admin</a></p>
-        
+        <p>&copy; 2025 Loomble. All Rights Reserved. <a href="admin/index.php" class="admin-link">Admin</a></p>
       </div>
     </footer>
 
@@ -366,54 +388,6 @@
           }
         });
       });
-
-      // Simuler le chargement de plus de posts
-      const loadMoreBtn = document.querySelector(".loadMoreBtn");
-      if (loadMoreBtn) {
-        loadMoreBtn.addEventListener("click", function () {
-          // Simulation de chargement
-          this.textContent = "Loading...";
-
-          setTimeout(() => {
-            // Créer de nouveaux posts
-            const postGrid = document.querySelector(".postGrid");
-
-            // Images à utiliser en rotation
-            const images = ["window.jpg", "girl.jpg", "architecture.jpg"];
-
-            // Ajouter 3 nouveaux posts
-            for (let i = 0; i < 3; i++) {
-              const postCard = document.createElement("div");
-              postCard.className = "postCard";
-
-              const imgIndex = i % images.length;
-
-              postCard.innerHTML = `
-              <div class="imgBx">
-                <img src="images/${images[imgIndex]}" alt="Blog image">
-              </div>
-              <div class="contentBx">
-                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore.</p>
-                <a href="#" class="btn">Read More</a>
-              </div>
-            `;
-
-              // Ajouter effet d'apparition
-              postCard.style.opacity = "0";
-              postGrid.appendChild(postCard);
-
-              // Animation d'apparition
-              setTimeout(() => {
-                postCard.style.transition = "opacity 0.5s ease";
-                postCard.style.opacity = "1";
-              }, 100 * i);
-            }
-
-            // Restaurer le bouton
-            this.textContent = "Load More";
-          }, 1000);
-        });
-      }
     </script>
   </body>
 </html>

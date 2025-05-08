@@ -1,10 +1,9 @@
 <?php
-
 // admin/index.php - Page de connexion
 session_start();
 
 // Importer la configuration
-require_once 'config.php';
+require_once 'includes/config.php';
 
 $error = '';
 
@@ -41,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $config['site_name']; ?> Admin - Connexion</title>
+    <title>Loomble Admin - Connexion</title>
     <link rel="stylesheet" href="../style.css">
     <style>
         .login-container {
@@ -82,11 +81,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <div class="login-container">
-        <div class="logo"><?php echo $config['site_name']; ?> Admin</div>
+        <div class="logo">Loomble Admin</div>
         <form class="login-form" method="post" action="">
             
             <?php if ($error): ?>
-                <div class="error-message"><?php echo $error; ?></div>
+                <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
             
             <div class="inputBox">
@@ -104,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             
             <div class="login-footer">
-                Panneau d'administration <?php echo $config['site_name']; ?> &copy; <?php echo date('Y'); ?>
+                Panneau d'administration Loomble &copy; <?php echo date('Y'); ?>
             </div>
         </form>
     </div>
