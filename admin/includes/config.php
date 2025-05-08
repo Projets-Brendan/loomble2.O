@@ -2,6 +2,11 @@
 // admin/includes/config.php - Configuration de base de l'espace admin
 // Ce fichier devrait être protégé et ne pas être accessible publiquement
 
+// admin/index.php - Page de connexion
+session_start();
+
+// Importer la configuration
+require_once 'includes/config.php';
 // Configuration des utilisateurs administrateurs
 // Format: 'nom_utilisateur' => 'mot_de_passe_haché'
 $admin_users = [

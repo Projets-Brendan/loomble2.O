@@ -3,7 +3,6 @@
 require_once 'includes/auth_check.php';
 require_once 'includes/config.php';
 
-
 // Initialisation des variables
 $title = '';
 $content = '';
@@ -17,7 +16,13 @@ $error = '';
 $tags = '';
 
 // Fonction pour valider les dimensions et la taille du fichier
+// Fonction pour valider les dimensions et la taille du fichier
 function validateImage($file) {
+    // Vérifier si le fichier existe et s'il y a des erreurs
+    if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
+        return "Erreur lors du téléchargement du fichier.";
+    }
+    
     // Taille maximale (5 Mo)
     $max_size = 5 * 1024 * 1024;
     if ($file['size'] > $max_size) {
@@ -25,7 +30,7 @@ function validateImage($file) {
     }
     
     // Vérifier si c'est une image valide
-    $image_info = getimagesize($file['tmp_name']);
+    $image_info = @getimagesize($file['tmp_name']);
     if (!$image_info) {
         return "Le fichier téléchargé n'est pas une image valide.";
     }
@@ -55,6 +60,11 @@ if (isset($_GET['edit']) && !empty($_GET['edit'])) {
         
         preg_match('/<div class="article-featured-image">.*?<img src="(.*?)"/', $html_content, $image_matches);
         $featured_image = isset($image_matches[1]) ? $image_matches[1] : '';
+        
+        // Nettoyer le chemin de l'image si nécessaire
+        if (strpos($featured_image, '/') === 0) {
+            $featured_image = substr($featured_image, 1);
+        }
         
         // Extraire la méta description
         preg_match('/<meta name="description" content="(.*?)">/', $html_content, $meta_matches);
@@ -90,89 +100,7 @@ if (isset($_GET['edit']) && !empty($_GET['edit'])) {
     }
 }
 
-// Traitement du formulaire de soumission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $title = trim($_POST['title'] ?? '');
-    $content = $_POST['content'] ?? '';
-    $featured_image = $_POST['featured_image'] ?? '';
-    $meta_description = $_POST['meta_description'] ?? '';
-    $custom_slug = trim($_POST['slug'] ?? '');
-    $tags = $_POST['tags'] ?? '';
-    
-    if (empty($title)) {
-        $error = "Le titre est obligatoire.";
-    } else {
-        // Créer un slug à partir du titre pour le nom de fichier ou utiliser le slug personnalisé
-        $slug = !empty($custom_slug) ? $custom_slug : generateSlug($title);
-        $date_prefix = date('Ymd');
-        $file_name = $edit_mode ? $file_to_edit : $date_prefix . '-' . $slug . '.html';
-    }
-}  
-// Traitement de la sauvegarde automatique
-if (isset($_POST['auto_save']) && $_POST['auto_save'] === '1') {
-    $title = trim($_POST['title'] ?? '');
-    $content = $_POST['content'] ?? '';
-    $featured_image = $_POST['featured_image'] ?? '';
-    $meta_description = $_POST['meta_description'] ?? '';
-    $custom_slug = trim($_POST['slug'] ?? '');
-    $tags = $_POST['tags'] ?? '';
-    
-    if (!empty($title)) {
-        // Générer un nom de session unique pour cet article
-        $session_key = 'auto_save_' . md5($title);
-        
-        // Sauvegarder les données dans la session
-        $_SESSION[$session_key] = [
-            'title' => $title,
-            'content' => $content,
-            'featured_image' => $featured_image,
-            'meta_description' => $meta_description,
-            'slug' => $custom_slug,
-            'tags' => $tags,
-            'timestamp' => time()
-        ];
-        
-        echo "Article auto-sauvegardé";
-        exit; // Arrêter l'exécution pour les requêtes AJAX
-    }
-}
-// Gestion de l'upload d'image
-$image_path = $featured_image;
-if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-    // Validation de l'image
-    $validation_result = validateImage($_FILES['image']);
-    if ($validation_result !== true) {
-        $error = $validation_result;
-    } else {
-        $target_dir = $config['images_dir'];
-        if (!is_dir($target_dir)) {
-            mkdir($target_dir, 0755, true);
-        }
-        
-        $file_info = pathinfo($_FILES['image']['name']);
-        $file_ext = strtolower($file_info['extension']);
-        
-        if (in_array($file_ext, $config['allowed_image_types'])) {
-            $new_file_name = $slug . '-' . time() . '.' . $file_ext;
-            $target_file = $target_dir . $new_file_name;
-            
-            if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
-                // Chemin d'image standardisé - stocker sans le préfixe "../" pour cohérence
-                $image_path = 'images/articles/' . $new_file_name;
-                
-                // Optimiser l'image si c'est un format que nous pouvons optimiser
-                $mime_type = mime_content_type($target_file);
-                if (in_array($mime_type, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
-                    optimizeImage($target_file, $target_file);
-                }
-            } else {
-                $error = "Erreur lors de l'upload de l'image.";
-            }
-        } else {
-            $error = "Format d'image non pris en charge.";
-        }
-    }
-}
+// Fonction pour optimiser l'image
 function optimizeImage($source_path, $destination_path, $quality = 85) {
     // Obtenir les informations de l'image
     $info = getimagesize($source_path);
@@ -205,6 +133,61 @@ function optimizeImage($source_path, $destination_path, $quality = 85) {
     imagedestroy($image);
     return true;
 }
+
+// Traitement du formulaire de soumission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['save']) || isset($_POST['save_and_exit']))) {
+    $title = trim($_POST['title'] ?? '');
+    $content = $_POST['content'] ?? '';
+    $featured_image = $_POST['featured_image'] ?? '';
+    $meta_description = $_POST['meta_description'] ?? '';
+    $custom_slug = trim($_POST['slug'] ?? '');
+    $tags = $_POST['tags'] ?? '';
+    
+    if (empty($title)) {
+        $error = "Le titre est obligatoire.";
+    } else {
+        // Créer un slug à partir du titre pour le nom de fichier ou utiliser le slug personnalisé
+        $slug = !empty($custom_slug) ? $custom_slug : generateSlug($title);
+        $date_prefix = date('Ymd');
+        $file_name = $edit_mode ? $file_to_edit : $date_prefix . '-' . $slug . '.html';
+        
+        // Gestion de l'upload d'image
+        $image_path = $featured_image;
+        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            // Validation de l'image
+            $validation_result = validateImage($_FILES['image']);
+            if ($validation_result !== true) {
+                $error = $validation_result;
+            } else {
+                $target_dir = $config['images_dir'];
+                if (!is_dir($target_dir)) {
+                    mkdir($target_dir, 0755, true);
+                }
+                
+                $file_info = pathinfo($_FILES['image']['name']);
+                $file_ext = strtolower($file_info['extension']);
+                
+                if (in_array($file_ext, $config['allowed_image_types'])) {
+                    $new_file_name = $slug . '-' . time() . '.' . $file_ext;
+                    $target_file = $target_dir . $new_file_name;
+                    
+                    if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
+                        // Chemin d'image standardisé - stocker sans le préfixe "../" pour cohérence
+                        $image_path = 'images/articles/' . $new_file_name;
+                        
+                        // Optimiser l'image si c'est un format que nous pouvons optimiser
+                        $mime_type = mime_content_type($target_file);
+                        if (in_array($mime_type, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
+                            optimizeImage($target_file, $target_file);
+                        }
+                    } else {
+                        $error = "Erreur lors de l'upload de l'image.";
+                    }
+                } else {
+                    $error = "Format d'image non pris en charge.";
+                }
+            }
+        }
         
         if (empty($error)) {
             // Préparation des tags HTML
@@ -221,6 +204,20 @@ function optimizeImage($source_path, $destination_path, $quality = 85) {
             // Si la méta description est vide, générer à partir du contenu
             if (empty($meta_description)) {
                 $meta_description = substr(strip_tags($content), 0, 160);
+            }
+            
+            // S'assurer que le chemin de l'image est correct pour l'HTML
+            $image_html = '';
+            if (!empty($image_path)) {
+                // Standardiser le chemin pour l'HTML
+                $image_src = $image_path;
+                if (strpos($image_src, '/') === 0) {
+                    $image_src = substr($image_src, 1);
+                }
+                
+                $image_html = '<div class="article-featured-image">
+<img src="/' . htmlspecialchars($image_src) . '" alt="' . htmlspecialchars($title) . '">
+</div>';
             }
             
             // Préparation du contenu HTML de l'article
@@ -255,10 +252,7 @@ function optimizeImage($source_path, $destination_path, $quality = 85) {
                 <span class="article-date">Publié le ' . date('d/m/Y') . '</span>
             </div>
             
-            // Dans la partie où l'image est intégrée à l'article
-' . (!empty($image_path) ? '<div class="article-featured-image">
-<img src="/' . htmlspecialchars($image_path) . '" alt="' . htmlspecialchars($title) . '">
-</div>' : '') . '
+            ' . $image_html . '
             
             <div class="article-content">
                 ' . $content . '
@@ -345,6 +339,35 @@ function optimizeImage($source_path, $destination_path, $quality = 85) {
                 $error = "Erreur lors de l'enregistrement de l'article.";
             }
         }
+    }
+}
+
+// Traitement de la sauvegarde automatique
+if (isset($_POST['auto_save']) && $_POST['auto_save'] === '1') {
+    $title = trim($_POST['title'] ?? '');
+    $content = $_POST['content'] ?? '';
+    $featured_image = $_POST['featured_image'] ?? '';
+    $meta_description = $_POST['meta_description'] ?? '';
+    $custom_slug = trim($_POST['slug'] ?? '');
+    $tags = $_POST['tags'] ?? '';
+    
+    if (!empty($title)) {
+        // Générer un nom de session unique pour cet article
+        $session_key = 'auto_save_' . md5($title);
+        
+        // Sauvegarder les données dans la session
+        $_SESSION[$session_key] = [
+            'title' => $title,
+            'content' => $content,
+            'featured_image' => $featured_image,
+            'meta_description' => $meta_description,
+            'slug' => $custom_slug,
+            'tags' => $tags,
+            'timestamp' => time()
+        ];
+        
+        echo "Article auto-sauvegardé";
+        exit; // Arrêter l'exécution pour les requêtes AJAX
     }
 }
 
@@ -651,140 +674,144 @@ if (isset($_GET['open_image_manager'])) {
     </div>
 
     <script>
-      // Remplacer ce script JavaScript dans editor.php (environ ligne 600)
+      // Prévisualisation de l'image téléchargée
+      document.getElementById('image').addEventListener('change', function(e) {
+          const preview = document.getElementById('image-preview');
+          const file = e.target.files[0];
+          
+          if (file) {
+              const reader = new FileReader();
+              reader.onload = function(event) {
+                  preview.src = event.target.result;
+                  preview.style.display = 'block';
+              }
+              reader.readAsDataURL(file);
+          } else {
+              preview.src = '';
+              preview.style.display = 'none';
+          }
+      });
 
-// Prévisualisation de l'image téléchargée
-document.getElementById('image').addEventListener('change', function(e) {
-    const preview = document.getElementById('image-preview');
-    const file = e.target.files[0];
-    
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            preview.src = event.target.result;
-            preview.style.display = 'block';
-        }
-        reader.readAsDataURL(file);
-    } else {
-        preview.src = '';
-        preview.style.display = 'none';
-    }
-});
+      // Prévisualisation de l'image par URL
+      document.getElementById('featured_image').addEventListener('change', function() {
+          const preview = document.querySelector('.thumbnail-preview');
+          const url = this.value;
+          
+          if (url) {
+              // Construire correctement le chemin de prévisualisation
+              let previewUrl = url;
+              
+              // Si le chemin ne commence pas par http (donc un chemin relatif)
+              if (!url.startsWith('http')) {
+                  // Si le chemin ne commence pas déjà par "../"
+                  if (!url.startsWith('../')) {
+                      // Ajouter "../" pour la prévisualisation depuis l'admin
+                      previewUrl = '../' + url;
+                  }
+              }
+              
+              preview.src = previewUrl;
+              preview.style.display = 'block';
+          } else {
+              preview.style.display = 'none';
+          }
+      });
+              
+    // Système d'onglets
+    const tabButtons = document.querySelectorAll('.tab-btn');
+      const tabContents = document.querySelectorAll('.tab-content');
+      
+      tabButtons.forEach(button => {
+          button.addEventListener('click', () => {
+              const tabId = button.getAttribute('data-tab');
+              
+              // Désactiver tous les onglets
+              tabButtons.forEach(btn => btn.classList.remove('active'));
+              tabContents.forEach(content => content.classList.remove('active'));
+              
+              // Activer l'onglet cliqué
+              button.classList.add('active');
+              document.getElementById(tabId).classList.add('active');
+          });
+      });
+      
+      // Générer automatiquement le slug à partir du titre
+      document.getElementById('title').addEventListener('blur', function() {
+          const slugField = document.getElementById('slug');
+          // Ne générer le slug que si le champ est vide
+          if (slugField.value === '') {
+              // Fonction simplifiée de génération de slug
+              const title = this.value;
+              if (title) {
+                  // Version simplifiée de translittération
+                  const slug = title.toLowerCase()
+                      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+                      .replace(/[^\w\s-]/g, '') // Supprimer les caractères spéciaux
+                      .replace(/\s+/g, '-')     // Remplacer les espaces par des tirets
+                      .replace(/-+/g, '-')      // Éviter les tirets multiples
+                      .trim();                  // Supprimer les espaces en début et fin
+                  
+                  slugField.value = slug;
+              }
+          }
+      });
 
-// Prévisualisation de l'image par URL
-document.getElementById('featured_image').addEventListener('change', function() {
-    const preview = document.querySelector('.thumbnail-preview');
-    const url = this.value;
-    
-    if (url) {
-        // Construire correctement le chemin de prévisualisation
-        let previewUrl = url;
-        
-        // Si le chemin ne commence pas par http (donc un chemin relatif)
-        if (!url.startsWith('http')) {
-            // Si le chemin ne commence pas déjà par "../"
-            if (!url.startsWith('../')) {
-                // Ajouter "../" pour la prévisualisation depuis l'admin
-                previewUrl = '../' + url;
-            }
-        }
-        
-        preview.src = previewUrl;
-        preview.style.display = 'block';
-    } else {
-        preview.style.display = 'none';
-    }
-});
-        
-        // Système d'onglets
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
-        
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const tabId = button.getAttribute('data-tab');
-                
-                // Désactiver tous les onglets
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabContents.forEach(content => content.classList.remove('active'));
-                
-                // Activer l'onglet cliqué
-                button.classList.add('active');
-                document.getElementById(tabId).classList.add('active');
-            });
-        });
-        
-        // Générer automatiquement le slug à partir du titre
-        document.getElementById('title').addEventListener('blur', function() {
-            const slugField = document.getElementById('slug');
-            // Ne générer le slug que si le champ est vide
-            if (slugField.value === '') {
-                // Fonction simplifiée de génération de slug (à compléter avec la gestion des accents)
-                const title = this.value;
-                const slug = title.toLowerCase()
-                    .replace(/[^\w\s-]/g, '') // Supprimer les caractères spéciaux
-                    .replace(/\s+/g, '-')     // Remplacer les espaces par des tirets
-                    .replace(/-+/g, '-')      // Éviter les tirets multiples
-                    .trim();                   // Supprimer les espaces en début et fin
-                
-                slugField.value = slug;
-            }
-        });
+      // Sauvegarde automatique
+      let autoSaveTimer;
+      const autoSaveInterval = 60000; // 1 minute
 
-        // Sauvegarde automatique
-let autoSaveTimer;
-const autoSaveInterval = 60000; // 1 minute
+      function autoSave() {
+          const title = document.getElementById('title').value;
+          if (title && tinymce.get('content')) {
+              const content = tinymce.get('content').getContent();
+              
+              if (title && content) {
+                  const formData = new FormData();
+                  formData.append('title', title);
+                  formData.append('content', content);
+                  formData.append('featured_image', document.getElementById('featured_image').value);
+                  formData.append('meta_description', document.getElementById('meta_description').value);
+                  formData.append('slug', document.getElementById('slug').value);
+                  formData.append('tags', document.getElementById('tags').value);
+                  formData.append('auto_save', '1');
+                  
+                  fetch('editor.php', {
+                      method: 'POST',
+                      body: formData
+                  })
+                  .then(response => response.text())
+                  .then(data => {
+                      const autoSaveStatus = document.getElementById('autoSaveStatus');
+                      if (autoSaveStatus) {
+                          autoSaveStatus.textContent = 'Sauvegarde automatique effectuée à ' + new Date().toLocaleTimeString();
+                          autoSaveStatus.style.opacity = '1';
+                          setTimeout(() => {
+                              autoSaveStatus.style.opacity = '0';
+                          }, 3000);
+                      }
+                  })
+                  .catch(error => console.error('Erreur de sauvegarde automatique:', error));
+              }
+          }
+      }
 
-function autoSave() {
-    const title = document.getElementById('title').value;
-    const content = tinymce.get('content').getContent();
-    
-    if (title && content) {
-        const formData = new FormData();
-        formData.append('title', title);
-        formData.append('content', content);
-        formData.append('featured_image', document.getElementById('featured_image').value);
-        formData.append('meta_description', document.getElementById('meta_description').value);
-        formData.append('slug', document.getElementById('slug').value);
-        formData.append('tags', document.getElementById('tags').value);
-        formData.append('auto_save', '1');
-        
-        fetch('editor.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.text())
-        .then(data => {
-            const autoSaveStatus = document.getElementById('autoSaveStatus');
-            if (autoSaveStatus) {
-                autoSaveStatus.textContent = 'Sauvegarde automatique effectuée à ' + new Date().toLocaleTimeString();
-                autoSaveStatus.style.opacity = '1';
-                setTimeout(() => {
-                    autoSaveStatus.style.opacity = '0';
-                }, 3000);
-            }
-        })
-        .catch(error => console.error('Erreur de sauvegarde automatique:', error));
-    }
-}
-
-// Initialiser la sauvegarde automatique
-document.addEventListener('DOMContentLoaded', function() {
-    // Ajouter un indicateur de sauvegarde
-    const btnGroup = document.querySelector('.btn-group');
-    const statusElement = document.createElement('div');
-    statusElement.id = 'autoSaveStatus';
-    statusElement.style.cssText = 'margin-left: 20px; color: #666; font-size: 0.8em; opacity: 0; transition: opacity 0.5s;';
-    btnGroup.appendChild(statusElement);
-    
-    // Démarrer la sauvegarde automatique
-    autoSaveTimer = setInterval(autoSave, autoSaveInterval);
-    
-    // Arrêter la sauvegarde automatique si l'utilisateur quitte la page
-    window.addEventListener('beforeunload', function() {
-        clearInterval(autoSaveTimer);
-    });
-});
+      // Initialiser la sauvegarde automatique
+      document.addEventListener('DOMContentLoaded', function() {
+          // Ajouter un indicateur de sauvegarde
+          const btnGroup = document.querySelector('.btn-group');
+          const statusElement = document.createElement('div');
+          statusElement.id = 'autoSaveStatus';
+          statusElement.style.cssText = 'margin-left: 20px; color: #666; font-size: 0.8em; opacity: 0; transition: opacity 0.5s;';
+          btnGroup.appendChild(statusElement);
+          
+          // Démarrer la sauvegarde automatique
+          autoSaveTimer = setInterval(autoSave, autoSaveInterval);
+          
+          // Arrêter la sauvegarde automatique si l'utilisateur quitte la page
+          window.addEventListener('beforeunload', function() {
+              clearInterval(autoSaveTimer);
+          });
+      });
     </script>
 </body>
 </html>
