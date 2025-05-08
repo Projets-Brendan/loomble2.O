@@ -2,7 +2,6 @@
 // admin/image-manager.php
 require_once 'includes/auth_check.php';
 
-
 // Répertoire des images
 $images_dir = '../images/articles/';
 
@@ -286,101 +285,29 @@ $is_popup = isset($_GET['popup']) && $_GET['popup'] === '1';
         
         <h2>Images disponibles</h2>
         
-      
-
-
-        <?php
-// Partie du fichier image-manager.php qui doit être corrigée - Remplacer le bloc problématique
-
-if (empty($images)): ?>
-    <p>Aucune image n'a été téléchargée.</p>
-<?php else: ?>
-    <div class="image-grid">
-        <?php foreach ($images as $image): ?>
-        <div class="image-card">
-            <div class="image-preview">
-                <img src="../<?php echo htmlspecialchars($image['path']); ?>" alt="<?php echo htmlspecialchars($image['name']); ?>">
-            </div>
-            <div class="image-info">
-                <div class="image-name"><?php echo htmlspecialchars($image['name']); ?></div>
-                <div class="image-meta">
-                    <?php echo date('d/m/Y', strtotime($image['date'])); ?> · 
-                    <?php echo round($image['size'] / 1024, 2); ?> KB
-                </div>
-            </div>
-            <div class="image-actions">
-                <a href="javascript:void(0);" class="copy-path" data-path="<?php echo htmlspecialchars($image['path']); ?>">Copier le chemin</a>
-                <?php if ($is_popup): ?>
-                <button class="select-image" data-path="<?php echo htmlspecialchars($image['path']); ?>">Sélectionner</button>
-                <?php else: ?>
-                <a href="delete-image.php?file=<?php echo urlencode(basename($image['path'])); ?>" class="delete" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette image ?');">Supprimer</a>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php endforeach; ?>
-    </div>
-<?php endif; ?>
-</div>
-
-<script>
-    // Gestion de la copie du chemin d'image
-    document.querySelectorAll('.copy-path').forEach(button => {
-        button.addEventListener('click', function() {
-            const path = this.getAttribute('data-path');
-            navigator.clipboard.writeText(path).then(() => {
-                alert('Chemin copié dans le presse-papiers: ' + path);
-            });
-        });
-    });
-    
-    <?php if ($is_popup): ?>
-    // Sélection d'image pour l'éditeur
-    document.querySelectorAll('.select-image').forEach(button => {
-        button.addEventListener('click', function() {
-            const path = this.getAttribute('data-path');
-            
-            // Standardiser le format du chemin d'image pour l'éditeur
-            let standardPath = path;
-            if (standardPath.startsWith('../')) {
-                standardPath = standardPath.substring(3);
-            }
-            
-            window.opener.document.getElementById('featured_image').value = standardPath;
-            
-            // Déclencher l'événement change pour mettre à jour la prévisualisation
-            const event = new Event('change');
-            window.opener.document.getElementById('featured_image').dispatchEvent(event);
-            window.close();
-        });
-    });
-    <?php endif; ?>
-</script>
-                    
-
-<!-- Remplacer ce bloc problématique -->
-<?php if ($is_popup): ?>
-<script>
-// Sélection d'image pour l'éditeur
-document.querySelectorAll('.select-image').forEach(button => {
-    button.addEventListener('click', function() {
-        const path = this.getAttribute('data-path');
-        
-        // Standardiser le format du chemin d'image pour l'éditeur
-        let standardPath = path;
-        if (standardPath.startsWith('../')) {
-            standardPath = standardPath.substring(3);
-        }
-        
-        window.opener.document.getElementById('featured_image').value = standardPath;
-        
-        // Déclencher l'événement change pour mettre à jour la prévisualisation
-        const event = new Event('change');
-        window.opener.document.getElementById('featured_image').dispatchEvent(event);
-        window.close();
-    });
-});
-</script>
-<?php endif; ?>
+        <?php if (empty($images)): ?>
+            <p>Aucune image n'a été téléchargée.</p>
+        <?php else: ?>
+            <div class="image-grid">
+                <?php foreach ($images as $image): ?>
+                <div class="image-card">
+                    <div class="image-preview">
+                        <img src="../<?php echo htmlspecialchars($image['path']); ?>" alt="<?php echo htmlspecialchars($image['name']); ?>">
+                    </div>
+                    <div class="image-info">
+                        <div class="image-name"><?php echo htmlspecialchars($image['name']); ?></div>
+                        <div class="image-meta">
+                            <?php echo date('d/m/Y', strtotime($image['date'])); ?> · 
+                            <?php echo round($image['size'] / 1024, 2); ?> KB
+                        </div>
+                    </div>
+                    <div class="image-actions">
+                        <a href="javascript:void(0);" class="copy-path" data-path="<?php echo htmlspecialchars($image['path']); ?>">Copier le chemin</a>
+                        <?php if ($is_popup): ?>
+                        <button class="select-image" data-path="<?php echo htmlspecialchars($image['path']); ?>">Sélectionner</button>
+                        <?php else: ?>
+                        <a href="delete-image.php?file=<?php echo urlencode(basename($image['path'])); ?>" class="delete" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette image ?');">Supprimer</a>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -400,23 +327,26 @@ document.querySelectorAll('.select-image').forEach(button => {
         });
         
         <?php if ($is_popup): ?>
-// Sélection d'image pour l'éditeur
-document.querySelectorAll('.select-image').forEach(button => {
-    button.addEventListener('click', function() {
-        const path = this.getAttribute('data-path');
-        // Standardiser le format du chemin d'image pour l'éditeur
-        if (path.startsWith('../')) {
-            window.opener.document.getElementById('featured_image').value = path.substring(3);
-        } else {
-            window.opener.document.getElementById('featured_image').value = path;
-        }
-        // Déclencher l'événement change pour mettre à jour la prévisualisation
-        const event = new Event('change');
-        window.opener.document.getElementById('featured_image').dispatchEvent(event);
-        window.close();
-    });
-});
-<?php endif; ?>
+        // Sélection d'image pour l'éditeur
+        document.querySelectorAll('.select-image').forEach(button => {
+            button.addEventListener('click', function() {
+                const path = this.getAttribute('data-path');
+                
+                // Standardiser le format du chemin d'image pour l'éditeur
+                let standardPath = path;
+                if (standardPath.startsWith('../')) {
+                    standardPath = standardPath.substring(3);
+                }
+                
+                window.opener.document.getElementById('featured_image').value = standardPath;
+                
+                // Déclencher l'événement change pour mettre à jour la prévisualisation
+                const event = new Event('change');
+                window.opener.document.getElementById('featured_image').dispatchEvent(event);
+                window.close();
+            });
+        });
+        <?php endif; ?>
     </script>
 </body>
 </html>

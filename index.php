@@ -191,12 +191,31 @@ if (is_dir($articles_dir)) {
           <?php foreach ($articles as $article): ?>
             <?php
               // Pour être sûr d'avoir une image, utiliser une image par défaut si nécessaire
-              $image_src = !empty($article['featured_image']) ? $article['featured_image'] : 'images/banniere.jpg';
+              $image_src = 'images/banniere.jpg'; // Image par défaut
               
-              // Corriger le chemin d'image si nécessaire
-              if (strpos($image_src, '../') === 0) {
-                  $image_src = substr($image_src, 3);
+              if (!empty($article['featured_image'])) {
+                  // Traiter le chemin d'image
+                  $featured_image = $article['featured_image'];
+                  
+                  // Si le chemin commence par ../
+                  if (strpos($featured_image, '../') === 0) {
+                      $featured_image = substr($featured_image, 3);
+                      $image_src = $featured_image;
+                  }
+                  // Si le chemin commence par /
+                  else if (strpos($featured_image, '/') === 0) {
+                      $featured_image = substr($featured_image, 1);
+                      $image_src = $featured_image;
+                  }
+                  // Sinon, on l'utilise tel quel
+                  else {
+                      $image_src = $featured_image;
+                  }
               }
+              
+              // Pour débogage
+              // echo "<!-- Image originale: " . htmlspecialchars($article['featured_image']) . " -->\n";
+              // echo "<!-- Image traitée: " . htmlspecialchars($image_src) . " -->\n";
               
               // Lien vers l'article
               $article_url = $articles_dir . urlencode($article['file']);

@@ -1,4 +1,7 @@
 <?php
+// admin/migration.php
+require_once 'includes/auth_check.php';
+
 // Chemin vers le répertoire des articles
 $articles_dir = '../articles/';
 
